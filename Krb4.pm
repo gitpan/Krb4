@@ -18,10 +18,14 @@ require DynaLoader;
 @EXPORT = qw(
 	
 );
-$VERSION = '0.9';
+$VERSION = '0.91';
+
+sub KOPT_DONT_MK_REQ { 0x00000001; }
+sub KOPT_DO_MUTUAL { 0x00000002; }
+sub KOPT_DONT_CANON { 0x00000004; }
 
 $Krb4::error=0;
-
+ 
 bootstrap Krb4 $VERSION;
 
 # Preloaded methods go here.
@@ -104,6 +108,30 @@ using the inet_aton and sockaddr_in functions in the Socket module.
 
 Decrypts the variable 'in' and returns the original data.  Other
 parameters are as described in mk_priv()
+
+=item sendauth(options,fh,service,inst,realm,checksum,laddr,faddr,version)
+
+Obtains a ticket for the specified service, instance, and realm, and
+writes it to the socket 'fh'.  Use recvauth to read the ticket on the
+server.  'laddr' is the packed network address of the client, and 'faddr' 
+is the packed network address of the server.  'options' can be any of the
+following:
+
+     Krb4::KOPT_DONT_MK_REQ
+     Krb4::KOPT_DO_MUTUAL
+     Krb4::KOPT_DONT_CANON
+
+Use Krb4::KOPT_DO_MUTUAL if you plan to do any encryption.  This function
+returns a list containing the service ticket, the credentials, and the key
+schedule.
+
+=item recvauth(options,fh,service,inst,faddr,laddr,fn)
+
+Reads a ticket/authenticator pair from the socket 'fh'.  'options' can be
+set as described above.  'faddr' is the packed network address of the
+client, and 'laddr' is the packed network address of the server.  This
+function returns a list containing the ticket, an AuthDat object, the key
+schedule, and the version string.
 
 =item get_err_txt(n)
 
@@ -240,7 +268,7 @@ You don't need to fool around with this.
 
 =head1 AUTHOR
 
-Jeff Horwitz, jhorwitz@umich.edu
+Jeff Horwitz <jhorwitz@umich.edu>
 
 =head1 SEE ALSO
 

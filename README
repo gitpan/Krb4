@@ -40,6 +40,4 @@ Kerberos.
 TO DO
 -----
 o fix noisy compilation
-o implement sendauth and recvauth
-o make constants available
 o password & TGT functions

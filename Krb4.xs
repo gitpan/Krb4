@@ -388,20 +388,22 @@ krb4_mk_priv(s_in,schedule,key,sender,receiver)
 	SV *			s_in
 	Krb4::KeySchedule	schedule
 	SV *			key
-	SV *			sender
-	SV *			receiver
+	struct sockaddr_in *	sender
+	struct sockaddr_in *	receiver
 
 	PREINIT:
 	u_char *in;
 	u_char *out;
 	des_cblock k;
-	struct sockaddr_in sender1;
-	struct sockaddr_in receiver1;
 	long in_length;
 	long out_length;
 
 	PPCODE:
 	in_length=SvCUR(s_in);
+	if (in_length == 0)
+	{	seterror(-1);
+		return;
+	}
 	in=(u_char *)safemalloc(in_length);
 	if (!in)
 	{	seterror(-1);
@@ -413,11 +415,11 @@ krb4_mk_priv(s_in,schedule,key,sender,receiver)
 		seterror(-1);
 		return;
 	}
-	memcpy(in,SvPV(s_in,na),SvCUR(s_in));
+	memset(in,0,in_length);
+	memset(out,0,in_length+ENC_HEADER_SZ);
+	memcpy(in,SvPV(s_in,na),in_length);
 	memcpy(&k,SvPV(key,na),SvCUR(key));
-	memcpy(&sender1,SvPV(sender,na),SvCUR(sender));
-	memcpy(&receiver1,SvPV(receiver,na),SvCUR(receiver));
-	out_length=krb_mk_priv(in,out,in_length,schedule,k,&sender1,&receiver1);
+	out_length=krb_mk_priv(in,out,in_length,schedule,k,sender,receiver);
 	safefree(in);
 	XPUSHs(sv_2mortal(newSVpv(out,out_length)));
 
@@ -426,35 +428,139 @@ krb4_rd_priv(s_in,schedule,key,sender,receiver)
 	SV *			s_in
 	Krb4::KeySchedule	schedule
 	SV *			key
-	SV *			sender
-	SV *			receiver
+	struct sockaddr_in *	sender
+	struct sockaddr_in *	receiver
 
 	PREINIT:
 	u_char *in;
 	des_cblock k;
-	struct sockaddr_in sender1;
-	struct sockaddr_in receiver1;
 	int error;
 	long in_length;
 	MSG_DAT msg_data;
 
 	PPCODE:
 	in_length=SvCUR(s_in);
+	if (in_length == 0)
+	{	seterror(-1);
+		return;
+	}
 	in=(u_char *)safemalloc(in_length);
 	if (!in)
 	{	seterror(-1);
 		return;
 	}
-	memcpy(in,SvPV(s_in,na),SvCUR(s_in));
+	memset(in,0,in_length);
+	memset(&msg_data,0,sizeof(msg_data));
+	memcpy(in,SvPV(s_in,na),in_length);
 	memcpy(&k,SvPV(key,na),SvCUR(key));
-	memcpy(&sender1,SvPV(sender,na),SvCUR(sender));
-	memcpy(&receiver1,SvPV(receiver,na),SvCUR(receiver));
-	error=krb_rd_priv(in,in_length,schedule,k,&sender1,&receiver1,&msg_data);
+	error=krb_rd_priv(in,in_length,schedule,k,sender,receiver,&msg_data);
 	seterror(error);
 	safefree(in);
 	if (error == 0)
 	{	XPUSHs(sv_2mortal(newSVpv(msg_data.app_data,msg_data.app_length)));
 	}
+
+void
+krb4_sendauth(options,fh,service,inst,realm,checksum,laddr,faddr,version)
+	long 			options
+	FILE *			fh
+	char *			service
+	char * 			inst
+	char *			realm
+	long			checksum
+	struct sockaddr_in *	laddr
+	struct sockaddr_in *	faddr
+	char *			version
+
+	PREINIT:
+	KTEXT ktext;
+	MSG_DAT msg_data;
+	CREDENTIALS *cred;
+	des_key_schedule *schedule;
+	int error,fd;
+
+	PPCODE:
+	ktext=(KTEXT)safemalloc(sizeof(KTEXT_ST));
+	if (!ktext)
+	{	XSRETURN_UNDEF;
+	}
+	cred=(CREDENTIALS *)safemalloc(sizeof(CREDENTIALS));
+	if (!cred)
+	{	XSRETURN_UNDEF;
+	}
+	schedule=(des_key_schedule *)safemalloc(sizeof(des_key_schedule));
+	if (!schedule)
+	{	XSRETURN_UNDEF;
+	}
+	fd=fileno(fh);
+	error=krb_sendauth(options,fd,ktext,service,inst,realm,checksum,
+		&msg_data,cred,schedule,laddr,faddr,version);
+	seterror(error);
+	if (error == KSUCCESS)
+	{	ST(0) = sv_newmortal();
+		ST(1) = sv_newmortal();
+		ST(2) = sv_newmortal();
+		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
+		sv_setref_pv(ST(1), "Krb4::Creds", (void*)cred);
+		sv_setref_pv(ST(2), "Krb4::KeySchedule", (void*)schedule);
+		XSRETURN(3);
+	}
+	else
+	{	safefree(ktext);
+		safefree(cred);
+		safefree(schedule);
+	}
+
+void
+krb4_recvauth(options,fh,service,inst,faddr,laddr,fn)
+	long 			options
+	FILE *			fh
+	char *			service
+	char * 			inst
+	struct sockaddr_in *	faddr
+	struct sockaddr_in *	laddr
+	char *			fn
+
+	PREINIT:
+	KTEXT ktext;
+	AUTH_DAT *ad;
+	des_key_schedule *schedule;
+	char version[KRB_SENDAUTH_VLEN];
+	int error,fd;
+
+	PPCODE:
+	ktext=(KTEXT)safemalloc(sizeof(KTEXT_ST));
+	if (!ktext)
+	{	XSRETURN_UNDEF;
+	}
+	ad=(AUTH_DAT *)safemalloc(sizeof(AUTH_DAT));
+	if (!ad)
+	{	XSRETURN_UNDEF;
+	}
+	schedule=(des_key_schedule *)safemalloc(sizeof(des_key_schedule));
+	if (!schedule)
+	{	XSRETURN_UNDEF;
+	}
+	fd=fileno(fh);
+	error=krb_recvauth(options,fd,ktext,service,inst,faddr,laddr,
+		ad,fn,schedule,version);
+	seterror(error);
+	if (error == KSUCCESS)
+	{	ST(0) = sv_newmortal();
+		ST(1) = sv_newmortal();
+		ST(2) = sv_newmortal();
+		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
+		sv_setref_pv(ST(1), "Krb4::AuthDat", (void*)ad);
+		sv_setref_pv(ST(2), "Krb4::KeySchedule", (void*)schedule);
+		ST(3) = sv_2mortal(newSVpv(version,strlen(version)));
+		XSRETURN(4);
+	}
+	else
+	{	safefree(ktext);
+		safefree(ad);
+		safefree(schedule);
+	}
+
 
 MODULE = Krb4		PACKAGE = Krb4::Ticket
 

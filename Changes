@@ -1,2 +1,5 @@
-6/3/97
-	Added object oriented interface.  Beta version released.
+0.91	Implemented sendauth and recvauth.  Fixed a bug in mk_priv and
+	rd_priv where empty strings weren't being encrypted/decrypted
+	correctly.  Cleaned up some of the code.
+
+0.9	Added object oriented interface.  Beta version released.
