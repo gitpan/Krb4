@@ -1,3 +1,5 @@
+1.1     Fix PL_ macros for Perl 5.6 compatibility.
+
 1.0	First production release.
 	Moved module into the Authen:: namespace.  This should get the Krb4
 	on the main module list, making it easier to find.

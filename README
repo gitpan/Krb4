@@ -1,4 +1,4 @@
-Copyright (c) 1998 Jeff Horwitz (jhorwitz@umich.edu).  All rights reserved.
+Copyright (c) 2000 Jeff Horwitz (jeff@smashing.org).  All rights reserved.
 This module is free software; you can redistribute it and/or modify it under   
 the same terms as Perl itself.
 
@@ -16,7 +16,6 @@ installed on the host on which you are building.
 
 BUILDING & INSTALLATION
 -----------------------
-
 Four easy steps:
 1) edit Makefile.PL, and change LIBS and INC to reflect the paths to your
    Kerberos libraries and include files, respectively.  Add any other

@@ -1,10 +1,10 @@
 /*
  * Kerberos 4 extensions for Perl 5
- * Author: Jeff Horwitz <jeff@laserlink.net>
+ * Author: Jeff Horwitz <jeff@smashing.org>
  *
- * Copyright (c) 1999 Jeff Horwitz (jeff@laserlink.net).  All rights reserved.
- * This module is free software; you can redistribute it and/or modify it under   
- * the same terms as Perl itself.
+ * Copyright (c) 1999 Jeff Horwitz (jeff@smashing.org).  All rights reserved.
+ * This module is free software; you can redistribute it and/or modify it
+ * under the same terms as Perl itself.
  *
  */
 
@@ -54,7 +54,7 @@ krb4_get_phost(alias)
 		XPUSHs(sv_2mortal(newSVpv(host,strlen(host))));
 	}
 	else {
-		XPUSHs(sv_2mortal(newSVsv(&sv_undef)));
+		XPUSHs(sv_2mortal(newSVsv(&PL_sv_undef)));
 	}
 
 void
@@ -160,7 +160,7 @@ krb4_get_err_txt(n)
 
 	PPCODE:
 	if (n < 0 || n > 255) {
-		XPUSHs(newSVsv(&sv_undef));
+		XPUSHs(newSVsv(&PL_sv_undef));
 	}
 	else {
 		XPUSHs(newSVpv(krb_err_txt[n],strlen(krb_err_txt[n])));
@@ -251,7 +251,7 @@ krb4_get_key_sched(sv_session)
 
 	PPCODE:
 	if (!New(0,sched,1,des_key_schedule)) XSRETURN_UNDEF;
-	Copy(SvPV(sv_session,na),&session,1,C_Block);
+	Copy(SvPV(sv_session,PL_na),&session,1,C_Block);
 	error=des_key_sched(session,sched);
 	seterror(error);
 	if (error == KSUCCESS) {
@@ -295,8 +295,8 @@ krb4_mk_priv(s_in,schedule,key,sender,receiver)
 	}
 	Zero(in,in_length,u_char);
 	Zero(out,in_length+ENC_HEADER_SZ,u_char);
-	Copy(SvPV(s_in,na),in,in_length,u_char);
-	Copy(SvPV(key,na),&k,SvCUR(key),u_char);
+	Copy(SvPV(s_in,PL_na),in,in_length,u_char);
+	Copy(SvPV(key,PL_na),&k,SvCUR(key),u_char);
 	out_length=krb_mk_priv(in,out,in_length,schedule,k,sender,receiver);
 	Safefree(in);
 	XPUSHs(sv_2mortal(newSVpv(out,out_length)));
@@ -328,8 +328,8 @@ krb4_rd_priv(s_in,schedule,key,sender,receiver)
 	}
 	Zero(in,in_length,u_char);
 	Zero(&msg_data,1,MSG_DAT);
-	Copy(SvPV(s_in,na),in,in_length,u_char);
-	Copy(SvPV(key,na),&k,SvCUR(key),u_char);
+	Copy(SvPV(s_in,PL_na),in,in_length,u_char);
+	Copy(SvPV(key,PL_na),&k,SvCUR(key),u_char);
 	error=krb_rd_priv(in,in_length,schedule,k,sender,receiver,&msg_data);
 	seterror(error);
 	Safefree(in);
@@ -440,7 +440,7 @@ new(class,dat)
 	authent=(KTEXT)safemalloc(sizeof(KTEXT_ST));
 	if (!authent) XSRETURN_UNDEF;
 	authent->length=SvCUR(dat);
-	Copy(SvPV(dat,na),&authent->dat,authent->length,u_char);
+	Copy(SvPV(dat,PL_na),&authent->dat,authent->length,u_char);
 	ST(0) = sv_newmortal();
 	sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)authent);
 	XSRETURN(1);

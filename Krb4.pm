@@ -1,4 +1,4 @@
-# Copyright (c) 1999 Jeff Horwitz (jeff@laserlink.net).  All rights reserved.
+# Copyright (c) 1999 Jeff Horwitz (jeff@smashing.org).  All rights reserved.
 # This module is free software; you can redistribute it and/or modify it under
 # the same terms as Perl itself. 
 
@@ -18,7 +18,7 @@ require DynaLoader;
 @EXPORT = qw(
 
 );
-$VERSION = '1.0';
+$VERSION = '1.1';
 
 sub KOPT_DONT_MK_REQ { 0x00000001; }
 sub KOPT_DO_MUTUAL { 0x00000002; }
@@ -287,7 +287,7 @@ You don't need to fool around with this.
 
 =head1 AUTHOR
 
-Jeff Horwitz <jhorwitz@umich.edu>
+Jeff Horwitz <jeff@smashing.org>
 
 =head1 SEE ALSO
 
