@@ -1,9 +1,9 @@
 #!/usr/local/bin/perl
 
-# A very simple client using Krb4
+# A very simple client using Authen::Krb4
 
 use IO::Socket;
-use Krb4;
+use Authen::Krb4;
 
 $SERVER='servername'; # change this to your server
 $SERVER_PORT=6789;
@@ -18,13 +18,13 @@ $sock=new IO::Socket::INET(
 $sock or die "couldn't connect to server: $!";
 
 # get realm of server
-$realm=Krb4::realmofhost($SERVER);
+$realm=Authen::Krb4::realmofhost($SERVER);
 
 # get instance of server
-$phost=Krb4::get_phost($SERVER);
+$phost=Authen::Krb4::get_phost($SERVER);
 
 # get a ticket object for SERVICE.phost@realm
-$ticket=Krb4::mk_req($SERVICE,$phost,$realm,0);
+$ticket=Authen::Krb4::mk_req($SERVICE,$phost,$realm,0);
 
 $ticket or die "mk_req failed";
 

@@ -1,10 +1,10 @@
 #!/usr/local/bin/perl
 
-# An exceedingly simple server using Krb4
+# An exceedingly simple server using Authen::Krb4
 
 use IO::Socket;
 use Sys::Hostname;
-use Krb4;
+use Authen::Krb4;
 
 $SERVER_PORT=6789;
 $SERVICE='rcmd';
@@ -19,7 +19,7 @@ $sock=new IO::Socket::INET(
 $sock or die "couldn't create socket";
 
 # get instance for requested service
-$phost=Krb4::get_phost(hostname());
+$phost=Authen::Krb4::get_phost(hostname());
 
 while ($new_sock=$sock->accept()) {
 	while (defined($buf=<$new_sock>)) {
@@ -34,10 +34,10 @@ while ($new_sock=$sock->accept()) {
 	}
 
 	# create a new ticket with the data from the client
-	$ticket=new Krb4::Ticket($dat);
+	$ticket=new Authen::Krb4::Ticket($dat);
 
 	# decrypt ticket & see what we've got
-	$ad=Krb4::rd_req($ticket,$SERVICE,$phost,"");
+	$ad=Authen::Krb4::rd_req($ticket,$SERVICE,$phost,"");
 
 	# send a message back to the client
 	if ($ad) {

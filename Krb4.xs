@@ -1,8 +1,8 @@
 /*
  * Kerberos 4 extensions for Perl 5
- * Author: Jeff Horwitz <jhorwitz@umich.edu>
+ * Author: Jeff Horwitz <jeff@laserlink.net>
  *
- * Copyright (c) 1998 Jeff Horwitz (jhorwitz@umich.edu).  All rights reserved.
+ * Copyright (c) 1999 Jeff Horwitz (jeff@laserlink.net).  All rights reserved.
  * This module is free software; you can redistribute it and/or modify it under   
  * the same terms as Perl itself.
  *
@@ -24,19 +24,20 @@ extern "C" {
 
 #define ENC_HEADER_SZ 32
 
-typedef KTEXT Krb4__Ticket;
-typedef CREDENTIALS * Krb4__Creds;
-typedef AUTH_DAT * Krb4__AuthDat;
-typedef des_key_schedule * Krb4__KeySchedule;
+typedef KTEXT Authen__Krb4__Ticket;
+typedef CREDENTIALS * Authen__Krb4__Creds;
+typedef AUTH_DAT * Authen__Krb4__AuthDat;
+typedef des_key_schedule * Authen__Krb4__KeySchedule;
+typedef des_cblock * Authen__Krb4__EncryptionKey;
 
 void seterror(int error)
 {
 	SV * errorsv;
-	errorsv=perl_get_sv("Krb4::error",TRUE|0x04);
+	errorsv=perl_get_sv("Authen::Krb4::error",TRUE|0x04);
 	sv_setiv(errorsv,error);
 }
 
-MODULE = Krb4		PACKAGE = Krb4	PREFIX = krb4_
+MODULE = Authen::Krb4		PACKAGE = Authen::Krb4	PREFIX = krb4_
 
 void
 krb4_get_phost(alias)
@@ -165,7 +166,7 @@ krb4_get_err_txt(n)
 		XPUSHs(newSVpv(krb_err_txt[n],strlen(krb_err_txt[n])));
 	}	
 
-Krb4::Ticket
+Authen::Krb4::Ticket
 krb4_mk_req(service,instance,realm,checksum)
 	char *	service
 	char *	instance
@@ -182,7 +183,7 @@ krb4_mk_req(service,instance,realm,checksum)
 	seterror(error);
 	if (error == KSUCCESS) {
 		ST(0) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)authent);
+		sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)authent);
 		XSRETURN(1);
 	}
 	else {
@@ -190,9 +191,9 @@ krb4_mk_req(service,instance,realm,checksum)
 		XSRETURN_UNDEF;
 	}
 
-Krb4::AuthDat
+Authen::Krb4::AuthDat
 krb4_rd_req(t,service,instance,fn)
-	Krb4::Ticket	t
+	Authen::Krb4::Ticket	t
 	char *	service
 	char *	instance
 	char *	fn
@@ -207,7 +208,7 @@ krb4_rd_req(t,service,instance,fn)
 	seterror(error);
 	if (error == RD_AP_OK) {
 		ST(0) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::AuthDat", (void*)ad);
+		sv_setref_pv(ST(0), "Authen::Krb4::AuthDat", (void*)ad);
 		XSRETURN(1);
 	}
 	else {
@@ -215,7 +216,7 @@ krb4_rd_req(t,service,instance,fn)
 		XSRETURN_UNDEF;
 	}
 
-Krb4::Creds
+Authen::Krb4::Creds
 krb4_get_cred(service,instance,realm)
 	char *	service
 	char *	instance
@@ -231,7 +232,7 @@ krb4_get_cred(service,instance,realm)
 	seterror(error);
 	if (error == GC_OK) {
 		ST(0) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::Creds", (void*)c);
+		sv_setref_pv(ST(0), "Authen::Krb4::Creds", (void*)c);
 		XSRETURN(1);
 	}
 	else {
@@ -239,7 +240,7 @@ krb4_get_cred(service,instance,realm)
 		XSRETURN_UNDEF;
 	}
 
-Krb4::KeySchedule
+Authen::Krb4::KeySchedule
 krb4_get_key_sched(sv_session)
 	SV *	sv_session
 
@@ -255,7 +256,7 @@ krb4_get_key_sched(sv_session)
 	seterror(error);
 	if (error == KSUCCESS) {
 		ST(0) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::KeySchedule", (void*)sched);
+		sv_setref_pv(ST(0), "Authen::Krb4::KeySchedule", (void*)sched);
 		XSRETURN(1);
 	}
 	else {
@@ -264,11 +265,11 @@ krb4_get_key_sched(sv_session)
 
 void
 krb4_mk_priv(s_in,schedule,key,sender,receiver)
-	SV *			s_in
-	Krb4::KeySchedule	schedule
-	SV *			key
-	struct sockaddr_in *	sender
-	struct sockaddr_in *	receiver
+	SV *				s_in
+	Authen::Krb4::KeySchedule	schedule
+	SV *				key
+	struct sockaddr_in *		sender
+	struct sockaddr_in *		receiver
 
 	PREINIT:
 	u_char *in;
@@ -302,11 +303,11 @@ krb4_mk_priv(s_in,schedule,key,sender,receiver)
 
 void
 krb4_rd_priv(s_in,schedule,key,sender,receiver)
-	SV *			s_in
-	Krb4::KeySchedule	schedule
-	SV *			key
-	struct sockaddr_in *	sender
-	struct sockaddr_in *	receiver
+	SV *				s_in
+	Authen::Krb4::KeySchedule	schedule
+	SV *				key
+	struct sockaddr_in *		sender
+	struct sockaddr_in *		receiver
 
 	PREINIT:
 	u_char *in;
@@ -367,9 +368,9 @@ krb4_sendauth(options,fh,service,inst,realm,checksum,laddr,faddr,version)
 		ST(0) = sv_newmortal();
 		ST(1) = sv_newmortal();
 		ST(2) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
-		sv_setref_pv(ST(1), "Krb4::Creds", (void*)cred);
-		sv_setref_pv(ST(2), "Krb4::KeySchedule", (void*)schedule);
+		sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)ktext);
+		sv_setref_pv(ST(1), "Authen::Krb4::Creds", (void*)cred);
+		sv_setref_pv(ST(2), "Authen::Krb4::KeySchedule", (void*)schedule);
 		XSRETURN(3);
 	}
 	else {
@@ -410,9 +411,9 @@ krb4_recvauth(options,fh,service,inst,faddr,laddr,fn)
 		ST(0) = sv_newmortal();
 		ST(1) = sv_newmortal();
 		ST(2) = sv_newmortal();
-		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
-		sv_setref_pv(ST(1), "Krb4::AuthDat", (void*)ad);
-		sv_setref_pv(ST(2), "Krb4::KeySchedule", (void*)schedule);
+		sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)ktext);
+		sv_setref_pv(ST(1), "Authen::Krb4::AuthDat", (void*)ad);
+		sv_setref_pv(ST(2), "Authen::Krb4::KeySchedule", (void*)schedule);
 		ST(3) = sv_2mortal(newSVpv(version,strlen(version)));
 		XSRETURN(4);
 	}
@@ -423,9 +424,9 @@ krb4_recvauth(options,fh,service,inst,faddr,laddr,fn)
 	}
 
 
-MODULE = Krb4		PACKAGE = Krb4::Ticket
+MODULE = Authen::Krb4		PACKAGE = Authen::Krb4::Ticket
 
-Krb4::Ticket
+Authen::Krb4::Ticket
 new(class,dat)
 	char *	class
 	SV *	dat
@@ -441,12 +442,12 @@ new(class,dat)
 	authent->length=SvCUR(dat);
 	Copy(SvPV(dat,na),&authent->dat,authent->length,u_char);
 	ST(0) = sv_newmortal();
-	sv_setref_pv(ST(0), "Krb4::Ticket", (void*)authent);
+	sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)authent);
 	XSRETURN(1);
 
 int
 DESTROY(t)
-	Krb4::Ticket	t
+	Authen::Krb4::Ticket	t
 
 	CODE:
 	Safefree(t);
@@ -457,7 +458,7 @@ DESTROY(t)
 
 int
 length(t)
-	Krb4::Ticket	t
+	Authen::Krb4::Ticket	t
 
 	CODE:
 	RETVAL=t->length;
@@ -467,16 +468,16 @@ length(t)
 
 void
 dat(t)
-	Krb4::Ticket	t
+	Authen::Krb4::Ticket	t
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv((char *)&(t->dat),t->length)));
 
-MODULE = Krb4		PACKAGE = Krb4::AuthDat
+MODULE = Authen::Krb4		PACKAGE = Authen::Krb4::AuthDat
 
 int
 DESTROY(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	CODE:
 	Safefree(ad);
@@ -487,81 +488,81 @@ DESTROY(ad)
 
 void
 pname(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(ad->pname,strlen(ad->pname))));
 
 void
 pinst(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(ad->pinst,strlen(ad->pinst))));
 
 void
 prealm(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(ad->prealm,strlen(ad->prealm))));
 
 void
 session(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv((char *)&(ad->session),sizeof(ad->session))));
 
 void
 k_flags(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv((char *)&(ad->k_flags),sizeof(ad->k_flags))));
 
 void
 checksum(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVnv(ad->checksum)));
 
 void
 life(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSViv(ad->life)));
 
 void
 time_sec(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVnv(ad->time_sec)));
 
 void
 address(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVnv(ad->address)));
 
-Krb4::Ticket
+Authen::Krb4::Ticket
 reply(ad)
-	Krb4::AuthDat	ad
+	Authen::Krb4::AuthDat	ad
 
 	PPCODE:
 	ST(0) = sv_newmortal();
-	sv_setref_pv(ST(0), "Krb4::Ticket", (void*)&ad->reply);
+	sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)&ad->reply);
 	XSRETURN(1);
 
-MODULE = Krb4		PACKAGE = Krb4::Creds
+MODULE = Authen::Krb4		PACKAGE = Authen::Krb4::Creds
 
 int
 DESTROY(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	CODE:
 	Safefree(c);
@@ -572,82 +573,82 @@ DESTROY(c)
 
 void
 service(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->service,strlen(c->service))));
 
 void
 instance(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->instance,strlen(c->instance))));
 
 void
 realm(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->realm,strlen(c->realm))));
 
 void
 lifetime(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSViv(c->lifetime)));
 
 void
 kvno(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSViv(c->kvno)));
 
 void
 issue_date(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVnv(c->issue_date)));
 
 void
 session(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv((char *)&(c->session),sizeof(c->session))));
 
-Krb4::Ticket
+Authen::Krb4::Ticket
 ticket(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	ST(0) = sv_newmortal();
-	sv_setref_pv(ST(0), "Krb4::Ticket", (void*)&c->ticket_st);
+	sv_setref_pv(ST(0), "Authen::Krb4::Ticket", (void*)&c->ticket_st);
 	XSRETURN(1);
 
 void
 pname(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->pname,strlen(c->pname))));
 
 void
 pinst(c)
-	Krb4::Creds	c
+	Authen::Krb4::Creds	c
 
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->pinst,strlen(c->pinst))));
 
 
-MODULE = Krb4		PACKAGE = Krb4::KeySchedule
+MODULE = Authen::Krb4		PACKAGE = Authen::Krb4::KeySchedule
 
 int
 DESTROY(sched)
-	Krb4::KeySchedule	sched
+	Authen::Krb4::KeySchedule	sched
 
 	CODE:
 	Safefree(sched);

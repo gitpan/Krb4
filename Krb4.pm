@@ -1,8 +1,8 @@
-# Copyright (c) 1997 Jeff Horwitz (jhorwitz@umich.edu).  All rights reserved.
+# Copyright (c) 1999 Jeff Horwitz (jeff@laserlink.net).  All rights reserved.
 # This module is free software; you can redistribute it and/or modify it under
 # the same terms as Perl itself. 
 
-package Krb4;
+package Authen::Krb4;
 
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
@@ -18,15 +18,15 @@ require DynaLoader;
 @EXPORT = qw(
 
 );
-$VERSION = '0.93';
+$VERSION = '1.0';
 
 sub KOPT_DONT_MK_REQ { 0x00000001; }
 sub KOPT_DO_MUTUAL { 0x00000002; }
 sub KOPT_DONT_CANON { 0x00000004; }
 
-$Krb4::error=0;
- 
-bootstrap Krb4 $VERSION;
+$Authen::Krb4::error=0;
+
+bootstrap Authen::Krb4 $VERSION;
 
 # Preloaded methods go here.
 
@@ -38,23 +38,23 @@ __END__
 
 =head1 NAME
 
-Krb4 - Perl extension for Kerberos 4
+Authen::Krb4 - Perl extension for Kerberos 4
 
 =head1 SYNOPSIS
 
-use Krb4;
+use Authen::Krb4;
 
 =head1 DESCRIPTION
 
-Krb4 is an object oriented extension to Perl 5 which implements several
-user-level Kerberos 4 functions.  With this module, you can create
+Authen::Krb4 is an object oriented extension to Perl 5 which implements
+several user-level Kerberos 4 functions.  With this module, you can create
 Kerberized clients and servers written in Perl.  It is compatible with
 both AFS and MIT Kerberos.
 
 =head2 VARIABLES & FUNCTIONS
 
 NOTE: No methods or variables are exported, so each variable and function
-should be preceded by 'Krb4::'
+should be preceded by 'Authen::Krb4::'
 
 =over 4
 
@@ -76,27 +76,27 @@ Returns the realm of the machine 'host'.
 
 =item mk_req(service,instance,realm,checksum)
 
-Returns a Krb4::Ticket object for the specified service, instance, and
-realm.  It will return undef if there was an error.
+Returns an Authen::Krb4::Ticket object for the specified service, instance,
+and realm.  It will return undef if there was an error.
 
 =item rd_req(ticket,service,instance,fn)
 
-Returns a Krb4::AuthDat object, which contains information obtained from
-the ticket, or undef upon failure.  Ticket is a variable of the class
-Krb4::Ticket, which can be obtained from mk_req().  fn is a path to the
-appropriate srvtab.  /etc/srvtab will be used if fn is null.
+Returns an Authen::Krb4::AuthDat object, which contains information obtained
+from the ticket, or undef upon failure.  Ticket is a variable of the class
+Authen::Krb4::Ticket, which can be obtained from mk_req().  fn is a path to
+the appropriate srvtab.  /etc/srvtab will be used if fn is null.
 
 =item get_cred(service,instance,realm)
 
 Search the caller's ticket file for a ticket for the service and
-instance in the given realm.  Returns a Krb4::Creds object, or undef upon
-failure.  This method can be used to extract a ticket's session key.
+instance in the given realm.  Returns a Authen::Krb4::Creds object, or undef
+upon failure.  This method can be used to extract a ticket's session key.
 
 =item get_key_sched(session)
 
 Returns the key schedule for the session key 'session', which can be
-obtained from rd_req() or get_cred().  The key schedule is a
-Krb4::KeySchedule object.
+obtained from rd_req() or get_cred().  The key schedule is an
+Authen::Krb4::KeySchedule object.
 
 =item mk_priv(in,schedule,key,sender,receiver)
 
@@ -117,13 +117,12 @@ server.  'laddr' is the packed network address of the client, and 'faddr'
 is the packed network address of the server.  'options' can be any of the
 following:
 
-     Krb4::KOPT_DONT_MK_REQ
-     Krb4::KOPT_DO_MUTUAL
-     Krb4::KOPT_DONT_CANON
+     Authen::Krb4::KOPT_DONT_MK_REQ
+     Authen::Krb4::KOPT_DO_MUTUAL
+     Authen::Krb4::KOPT_DONT_CANON
 
-Use Krb4::KOPT_DO_MUTUAL if you plan to do any encryption.  This function
-returns a list containing the service ticket, the credentials, and the key
-schedule.
+Use KOPT_DO_MUTUAL if you plan to do any encryption.  This function returns
+a list containing the service ticket, the credentials, and the key schedule.
 
 =item recvauth(options,fh,service,inst,faddr,laddr,fn)
 
@@ -162,12 +161,12 @@ number n.
 
 =head2 CLASSES & METHODS
 
-There are four classes in the Krb4 module, Ticket, AuthDat, Creds, and
-KeySchedule.  They are all simply abstractions of Kerberos 4 structures.  
+There are four classes in the Authen::Krb4 module, Ticket, AuthDat, Creds,
+and KeySchedule.  They are all simply abstractions of Kerberos 4 structures.  
 You almost never need to worry about creating new objects--the functions
-which return these objects create them for you.  The one exception is
-when you need to construct a Ticket object for rd_req().  See below for
-details.
+which return these objects create them for you (is this the best thing to 
+do?).  The one exception is when you need to construct a Ticket object for
+rd_req().  See below for details.
 
 =over 4
 
