@@ -2,7 +2,7 @@
  * Kerberos 4 extensions for Perl 5
  * Author: Jeff Horwitz <jhorwitz@umich.edu>
  *
- * Copyright (c) 1997 Jeff Horwitz (jhorwitz@umich.edu).  All rights reserved.
+ * Copyright (c) 1998 Jeff Horwitz (jhorwitz@umich.edu).  All rights reserved.
  * This module is free software; you can redistribute it and/or modify it under   
  * the same terms as Perl itself.
  *
@@ -23,10 +23,6 @@ extern "C" {
 #endif
 
 #define ENC_HEADER_SZ 32
-
-typedef unsigned char my_u_char;
-typedef unsigned int my_u_int32_t;
-typedef unsigned short my_u_short;
 
 typedef KTEXT Krb4__Ticket;
 typedef CREDENTIALS * Krb4__Creds;
@@ -103,6 +99,56 @@ krb4_get_pw_in_tkt(user,inst,realm,service,srealm,lifetime,password)
 		password[0] ? password : (char *)0);
 	seterror(error);
 	RETVAL=error;
+
+	OUTPUT:
+	RETVAL
+
+int
+krb4_get_svc_in_tkt(user,inst,realm,service,srealm,lifetime,srvtab)
+	char *	user
+	char *	inst
+	char *	realm
+	char *	service
+	char *	srealm
+	long	lifetime
+	char *	srvtab
+
+	PREINIT:
+	int error=0;
+
+	CODE:
+	error=krb_get_svc_in_tkt(user,inst,realm,service,srealm,lifetime,
+		srvtab[0] ? srvtab : (char *)0);
+	seterror(error);
+	RETVAL=error;
+
+	OUTPUT:
+	RETVAL
+
+void
+krb4_read_service_key(user,inst,realm,kvno,srvtab)
+	char *	user
+	char *	inst
+	char *	realm
+	int	kvno
+	char *	srvtab
+
+	PREINIT:
+	des_cblock *k;
+	int error=0;
+
+	PPCODE:
+	if (!New(0,k,1,des_cblock)) XSRETURN_UNDEF;
+	error=read_service_key(user,inst,realm,kvno,srvtab[0] ? srvtab : (char *)0,(char *)k);
+	seterror(error);
+	if (error) XSRETURN_UNDEF;
+	XPUSHs(sv_2mortal(newSVpv((char *)k,sizeof(des_cblock))));
+
+int
+krb4_dest_tkt()
+	CODE:
+	RETVAL=dest_tkt();
+	seterror(RETVAL);
 
 	OUTPUT:
 	RETVAL
@@ -399,6 +445,17 @@ new(class,dat)
 	XSRETURN(1);
 
 int
+DESTROY(t)
+	Krb4::Ticket	t
+
+	CODE:
+	Safefree(t);
+	RETVAL=1;
+
+	OUTPUT:
+	RETVAL
+
+int
 length(t)
 	Krb4::Ticket	t
 
@@ -416,6 +473,17 @@ dat(t)
 	XPUSHs(sv_2mortal(newSVpv((char *)&(t->dat),t->length)));
 
 MODULE = Krb4		PACKAGE = Krb4::AuthDat
+
+int
+DESTROY(ad)
+	Krb4::AuthDat	ad
+
+	CODE:
+	Safefree(ad);
+	RETVAL=1;
+
+	OUTPUT:
+	RETVAL
 
 void
 pname(ad)
@@ -491,6 +559,17 @@ reply(ad)
 
 MODULE = Krb4		PACKAGE = Krb4::Creds
 
+int
+DESTROY(c)
+	Krb4::Creds	c
+
+	CODE:
+	Safefree(c);
+	RETVAL=1;
+
+	OUTPUT:
+	RETVAL
+
 void
 service(c)
 	Krb4::Creds	c
@@ -563,3 +642,16 @@ pinst(c)
 	PPCODE:
 	XPUSHs(sv_2mortal(newSVpv(c->pinst,strlen(c->pinst))));
 
+
+MODULE = Krb4		PACKAGE = Krb4::KeySchedule
+
+int
+DESTROY(sched)
+	Krb4::KeySchedule	sched
+
+	CODE:
+	Safefree(sched);
+	RETVAL=1;
+
+	OUTPUT:
+	RETVAL

@@ -1,3 +1,6 @@
+0.93	Implemented get_svc_in_tkt, read_service_key, and dest_tkt.
+	Added DESTROY methods for all Krb4 objects to avoid memory leaks.
+
 0.92	Replaced system memory functions with Perl macros.
 	Implemented krb_get_pw_in_tkt for password authentication.
 	Better sample code, including both client and server scripts.

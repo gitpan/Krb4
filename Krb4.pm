@@ -18,7 +18,7 @@ require DynaLoader;
 @EXPORT = qw(
 
 );
-$VERSION = '0.92';
+$VERSION = '0.93';
 
 sub KOPT_DONT_MK_REQ { 0x00000001; }
 sub KOPT_DO_MUTUAL { 0x00000002; }
@@ -139,6 +139,20 @@ Tries to get an initial ticket for 'user' using 'password'.  This function
 is especially useful for verifying a user's password. See the Kerberos
 documentation for details.
 
+=item get_svc_in_tkt(user,inst,realm,service,srealm,lifetime,srvtab)
+
+Tries to get an initial ticket for 'user' using the private key stored in
+'srvtab'.
+
+=item read_service_key(user,inst,realm,kvno,srvtab)
+
+Extracts the private key from a srvtab and returns it.  Use a kvno of 0
+to extract the first matching entry.
+
+=item dest_tkt()
+
+Destroys the ticket file, much like kdestroy.
+
 =item get_err_txt(n)
 
 Returns a string containing a textual description of the kerberos error
@@ -151,9 +165,9 @@ number n.
 There are four classes in the Krb4 module, Ticket, AuthDat, Creds, and
 KeySchedule.  They are all simply abstractions of Kerberos 4 structures.  
 You almost never need to worry about creating new objects--the functions
-which return these objects create them for you (is this the best thing to 
-do?).  The one exception is when you need to construct a Ticket object for
-rd_req().  See below for details.
+which return these objects create them for you.  The one exception is
+when you need to construct a Ticket object for rd_req().  See below for
+details.
 
 =over 4
 
@@ -250,7 +264,7 @@ The lifetime of the ticket.
 
 The key version number.
 
-=item * ticket_st
+=item * ticket
 
 The ticket itself.
 
