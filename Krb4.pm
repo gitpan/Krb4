@@ -94,6 +94,22 @@ Returns the key schedule for the session key 'session', which can be
 obtained from rd_req() or get_cred().  The key schedule is a
 Krb4::KeySchedule object.
 
+=item mk_priv(in,schedule,key,sender,receiver)
+
+Encrypts the data stored in 'in' and returns the encrypted data.  sender
+and receiver should be in standard internet format, which can be achieved
+using the inet_aton and sockaddr_in functions in the Socket module.
+
+=item rd_priv(in,schedule,key,sender,receiver)
+
+Decrypts the variable 'in' and returns the original data.  Other
+parameters are as described in mk_priv()
+
+=item get_err_txt(n)
+
+Returns a string containing a textual description of the kerberos error
+number n.
+
 =back
 
 =head2 CLASSES & METHODS
