@@ -16,9 +16,9 @@ require DynaLoader;
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 @EXPORT = qw(
-	
+
 );
-$VERSION = '0.91';
+$VERSION = '0.92';
 
 sub KOPT_DONT_MK_REQ { 0x00000001; }
 sub KOPT_DO_MUTUAL { 0x00000002; }
@@ -46,9 +46,9 @@ use Krb4;
 
 =head1 DESCRIPTION
 
-Krb4 is an object oriented extension to PERL 5 which implements several
+Krb4 is an object oriented extension to Perl 5 which implements several
 user-level Kerberos 4 functions.  With this module, you can create
-Kerberized clients and servers written in PERL.  It is compatible with
+Kerberized clients and servers written in Perl.  It is compatible with
 both AFS and MIT Kerberos.
 
 =head2 VARIABLES & FUNCTIONS
@@ -88,9 +88,9 @@ appropriate srvtab.  /etc/srvtab will be used if fn is null.
 
 =item get_cred(service,instance,realm)
 
-Searched the caller's ticket file for a ticket for the service and
+Search the caller's ticket file for a ticket for the service and
 instance in the given realm.  Returns a Krb4::Creds object, or undef upon
-failure.
+failure.  This method can be used to extract a ticket's session key.
 
 =item get_key_sched(session)
 
@@ -132,6 +132,12 @@ set as described above.  'faddr' is the packed network address of the
 client, and 'laddr' is the packed network address of the server.  This
 function returns a list containing the ticket, an AuthDat object, the key
 schedule, and the version string.
+
+=item get_pw_in_tkt(user,inst,realm,service,srealm,lifetime,password)
+
+Tries to get an initial ticket for 'user' using 'password'.  This function
+is especially useful for verifying a user's password. See the Kerberos
+documentation for details.
 
 =item get_err_txt(n)
 
@@ -213,7 +219,7 @@ The address in the ticket.  Useful for mutual authentication.
 
 =item * reply
 
-Auth reply (not very descriptive, I know...)
+Reply to send to the client (not implemented yet).
 
 =item Creds
 
@@ -225,11 +231,11 @@ The service name.
 
 =item * instance
 
-The instance (duh!)
+The instance
 
 =item * realm
 
-The realm (duh!)
+The realm
 
 =item * session
 

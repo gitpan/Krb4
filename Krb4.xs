@@ -6,8 +6,6 @@
  * This module is free software; you can redistribute it and/or modify it under   
  * the same terms as Perl itself.
  *
- * Radix routines courtesy of Dug Song <dugsong@umich.edu>
- *
  */
 
 #ifdef __cplusplus
@@ -35,118 +33,11 @@ typedef CREDENTIALS * Krb4__Creds;
 typedef AUTH_DAT * Krb4__AuthDat;
 typedef des_key_schedule * Krb4__KeySchedule;
 
-#define GETSHORT(s, cp) { \
-	register my_u_char *t_cp = (my_u_char*)(cp); \
-	(s) = (((my_u_short)t_cp[0]) << 8) \
-	    | (((my_u_short)t_cp[1])) \
-	    ; \
-	(cp) += 2; \
-}
-
-#define GETLONG(l, cp) { \
-	register my_u_char *t_cp = (my_u_char*)(cp); \
-	(l) = (((my_u_int32_t)t_cp[0]) << 24) \
-	    | (((my_u_int32_t)t_cp[1]) << 16) \
-	    | (((my_u_int32_t)t_cp[2]) << 8) \
-	    | (((my_u_int32_t)t_cp[3])) \
-	    ; \
-	(cp) += 4; \
-}
-
-#define PUTSHORT(s, cp) { \
-	register my_u_short t_s = (my_u_short)(s); \
-	register my_u_char *t_cp = (my_u_char*)(cp); \
-	*t_cp++ = t_s >> 8; \
-	*t_cp   = t_s; \
-	(cp) += 2; \
-}
-
-/*
- * Warning: PUTLONG --no-longer-- destroys its first argument.  if you
- * were depending on this "feature", you will lose.
- */
-#define PUTLONG(l, cp) { \
-	register my_u_int32_t t_l = (my_u_int32_t)(l); \
-	register my_u_char *t_cp = (my_u_char*)(cp); \
-	*t_cp++ = t_l >> 24; \
-	*t_cp++ = t_l >> 16; \
-	*t_cp++ = t_l >> 8; \
-	*t_cp   = t_l; \
-	(cp) += 4; \
-}
-
-static char *radixN =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static char _pad = '=';
-
 void seterror(int error)
-{	SV * errorsv;
+{
+	SV * errorsv;
 	errorsv=perl_get_sv("Krb4::error",TRUE|0x04);
 	sv_setiv(errorsv,error);
-}
-
-radix_encode(inbuf, outbuf, len, decode)
-     unsigned char inbuf[], outbuf[];
-     int *len, decode;
-{
-  int i,j,D;
-  char *p;
-  unsigned char c;
-  
-  if (decode) {
-    for (i=0,j=0; inbuf[i] && inbuf[i] != _pad; i++) {
-      if ((p = (char *)strchr(radixN, inbuf[i])) == NULL) return(1);
-      D = p - radixN;
-      switch (i&3) {
-      case 0:
-	outbuf[j] = D<<2;
-	break;
-      case 1:
-	outbuf[j++] |= D>>4;
-	outbuf[j] = (D&15)<<4;
-	break;
-      case 2:
-	outbuf[j++] |= D>>2;
-	outbuf[j] = (D&3)<<6;
-	break;
-      case 3:
-	outbuf[j++] |= D;
-      }
-    }
-    switch (i&3) {
-    case 1: return(3);
-    case 2: if (D&15) return(3);
-      if (strcmp((char *)&inbuf[i], "==")) return(2);
-      break;
-    case 3: if (D&3) return(3);
-      if (strcmp((char *)&inbuf[i], "="))  return(2);
-    }
-    *len = j;
-  } else {
-    for (i=0,j=0; i < *len; i++)
-      switch (i%3) {
-      case 0:
-	outbuf[j++] = radixN[inbuf[i]>>2];
-	c = (inbuf[i]&3)<<4;
-	break;
-      case 1:
-	outbuf[j++] = radixN[c|inbuf[i]>>4];
-	c = (inbuf[i]&15)<<2;
-	break;
-      case 2:
-	outbuf[j++] = radixN[c|inbuf[i]>>6];
-	outbuf[j++] = radixN[inbuf[i]&63];
-	c = 0;
-      }
-    if (i%3) outbuf[j++] = radixN[c];
-    switch (i%3) {
-    case 1: outbuf[j++] = _pad;
-    case 2: outbuf[j++] = _pad;
-    }
-    outbuf[*len = j] = '\0';
-  }
-  return(0);
 }
 
 MODULE = Krb4		PACKAGE = Krb4	PREFIX = krb4_
@@ -160,13 +51,13 @@ krb4_get_phost(alias)
 	char *phost;
 
 	PPCODE:
-	phost=krb_get_phost(alias);
+	phost=(char *)krb_get_phost(alias);
 	strncpy(host,phost,MAXHOSTNAMELEN);
-	if (host)
-	{	XPUSHs(sv_2mortal(newSVpv(host,strlen(host))));
+	if (host) {
+		XPUSHs(sv_2mortal(newSVpv(host,strlen(host))));
 	}
-	else
-	{	XPUSHs(sv_2mortal(newSVsv(&sv_undef)));
+	else {
+		XPUSHs(sv_2mortal(newSVsv(&sv_undef)));
 	}
 
 void
@@ -190,89 +81,43 @@ krb4_realmofhost(host)
 	char *realm;
 
 	PPCODE:
-	realm=krb_realmofhost(host);
+	realm=(char *)krb_realmofhost(host);
 	seterror(0);
 	XPUSHs(sv_2mortal(newSVpv(realm,strlen(realm))));
+
+int
+krb4_get_pw_in_tkt(user,inst,realm,service,srealm,lifetime,password)
+	char *	user
+	char *	inst
+	char *	realm
+	char *	service
+	char *	srealm
+	long	lifetime
+	char *	password
+
+	PREINIT:
+	int error=0;
+
+	CODE:
+	error=krb_get_pw_in_tkt(user,inst,realm,service,srealm,lifetime,
+		password[0] ? password : (char *)0);
+	seterror(error);
+	RETVAL=error;
+
+	OUTPUT:
+	RETVAL
 
 void
 krb4_get_err_txt(n)
 	int	n
 
 	PPCODE:
-	if (n < 0 || n > 255)
-	{	XPUSHs(newSVsv(&sv_undef));
+	if (n < 0 || n > 255) {
+		XPUSHs(newSVsv(&sv_undef));
 	}
-	else
-	{	XPUSHs(newSVpv(krb_err_txt[n],strlen(krb_err_txt[n])));
+	else {
+		XPUSHs(newSVpv(krb_err_txt[n],strlen(krb_err_txt[n])));
 	}	
-
-void
-krb4_tkt_to_radix(auth_dat)
-	SV *	auth_dat
-
-	PREINIT:
-	char *p, *s;
-	long len;
-	char temp[2048], buf[2048];
-	KTEXT_ST ktxt;
-	KTEXT auth = &ktxt;
-
-	PPCODE:
-	p = temp;
-
-	*p++ = 1; /* version */
-  
-	auth->length=SvCUR(auth_dat);
-	memcpy(auth->dat,SvPV(auth_dat,na),auth->length);
-
-	PUTLONG(auth->length, p);
-  
-	memcpy(p, auth->dat, auth->length);
-	p += auth->length;
-
-	len = p-temp;
-  
-	radix_encode(temp, buf, &len, 0);
-  
-	XPUSHs(sv_2mortal(newSVpv(buf,len)));
-
-void
-krb4_radix_to_tkt(buf)
-	char *	buf
-
-	PREINIT:
-	char *p, *s;
-	int buflen, len, version, tl;
-	char temp[2048];
-	KTEXT_ST ktxt;
-	KTEXT auth = &ktxt;
-
-	PPCODE:
-	buflen = strlen(buf);
-  
-	/* Make sure expansion won't overflow. */
-	if (buflen*5 > sizeof(temp)*8) {
-	return;
-	}
-  
-	len = buflen;
-	radix_encode(buf, temp, &len, 1);
-
-	p = temp;
-	if (len < 1) return;
-	version = *p; p++; len--;
-
-	GETLONG(auth->length, p);
-	len -= 4;
-
-	tl = auth->length;
-	if (tl < 0 || tl > len || tl > sizeof(auth->dat)) return;
-
-	memcpy(&auth->dat, p, tl);
-	p += tl;
-	len -= tl;
-
-	XPUSHs(sv_2mortal(newSVpv((char *)auth->dat,auth->length)));
 
 Krb4::Ticket
 krb4_mk_req(service,instance,realm,checksum)
@@ -286,19 +131,16 @@ krb4_mk_req(service,instance,realm,checksum)
 	int error;
 
 	PPCODE:
-	authent=(KTEXT)safemalloc(sizeof(KTEXT_ST));
-	if (!authent)
-	{	XSRETURN_UNDEF;
-	}
+	if (!New(0,authent,1,KTEXT_ST)) XSRETURN_UNDEF;
 	error=krb_mk_req(authent,service,instance,realm,checksum);	
 	seterror(error);
-	if (error == KSUCCESS)
-	{	ST(0) = sv_newmortal();
+	if (error == KSUCCESS) {
+		ST(0) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)authent);
 		XSRETURN(1);
 	}
-	else
-	{	safefree(authent);
+	else {
+		Safefree(authent);
 		XSRETURN_UNDEF;
 	}
 
@@ -314,19 +156,16 @@ krb4_rd_req(t,service,instance,fn)
 	int error;
 
 	PPCODE:
-	ad=(AUTH_DAT *)safemalloc(sizeof(AUTH_DAT));
-	if (!ad)
-	{	XSRETURN_UNDEF;
-	}
+	if (!New(0,ad,1,AUTH_DAT)) XSRETURN_UNDEF;
 	error=krb_rd_req(t,service,instance,(u_long)0,ad,fn);
 	seterror(error);
-	if (error == RD_AP_OK)
-	{	ST(0) = sv_newmortal();
+	if (error == RD_AP_OK) {
+		ST(0) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::AuthDat", (void*)ad);
 		XSRETURN(1);
 	}
-	else
-	{	safefree(ad);
+	else {
+		Safefree(ad);
 		XSRETURN_UNDEF;
 	}
 
@@ -341,19 +180,16 @@ krb4_get_cred(service,instance,realm)
 	int error;
 
 	PPCODE:
-	c=(CREDENTIALS *)safemalloc(sizeof(CREDENTIALS));
-	if (!c)
-	{	XSRETURN_UNDEF;
-	}
+	if (!New(0,c,1,CREDENTIALS)) XSRETURN_UNDEF;
 	error=krb_get_cred(service,instance,realm,c);
 	seterror(error);
-	if (error == GC_OK)
-	{	ST(0) = sv_newmortal();
+	if (error == GC_OK) {
+		ST(0) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::Creds", (void*)c);
 		XSRETURN(1);
 	}
-	else
-	{	safefree(c);
+	else {
+		Safefree(c);
 		XSRETURN_UNDEF;
 	}
 
@@ -367,20 +203,17 @@ krb4_get_key_sched(sv_session)
 	int error;
 
 	PPCODE:
-	sched=(des_key_schedule *)safemalloc(sizeof(des_key_schedule));
-	if (!sched)
-	{	XSRETURN_UNDEF;
-	}
-	memcpy((char *)&session,SvPV(sv_session,na),SvCUR(sv_session));
+	if (!New(0,sched,1,des_key_schedule)) XSRETURN_UNDEF;
+	Copy(SvPV(sv_session,na),&session,1,C_Block);
 	error=des_key_sched(session,sched);
 	seterror(error);
-	if (error == KSUCCESS)
-	{	ST(0) = sv_newmortal();
+	if (error == KSUCCESS) {
+		ST(0) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::KeySchedule", (void*)sched);
 		XSRETURN(1);
 	}
-	else
-	{	safefree(sched);
+	else {
+		Safefree(sched);
 	}
 
 void
@@ -400,27 +233,25 @@ krb4_mk_priv(s_in,schedule,key,sender,receiver)
 
 	PPCODE:
 	in_length=SvCUR(s_in);
-	if (in_length == 0)
-	{	seterror(-1);
-		return;
-	}
-	in=(u_char *)safemalloc(in_length);
-	if (!in)
-	{	seterror(-1);
-		return;
-	}
-	out=(u_char *)safemalloc(in_length+ENC_HEADER_SZ);
-	if (!out)
-	{	safefree(in);
+	if (in_length == 0) {
 		seterror(-1);
 		return;
 	}
-	memset(in,0,in_length);
-	memset(out,0,in_length+ENC_HEADER_SZ);
-	memcpy(in,SvPV(s_in,na),in_length);
-	memcpy(&k,SvPV(key,na),SvCUR(key));
+	if (!New(0,in,in_length,u_char)) {
+		seterror(-1);
+		return;
+	}
+	if (!New(0,out,in_length+ENC_HEADER_SZ,u_char)) {
+		Safefree(in);
+		seterror(-1);
+		return;
+	}
+	Zero(in,in_length,u_char);
+	Zero(out,in_length+ENC_HEADER_SZ,u_char);
+	Copy(SvPV(s_in,na),in,in_length,u_char);
+	Copy(SvPV(key,na),&k,SvCUR(key),u_char);
 	out_length=krb_mk_priv(in,out,in_length,schedule,k,sender,receiver);
-	safefree(in);
+	Safefree(in);
 	XPUSHs(sv_2mortal(newSVpv(out,out_length)));
 
 void
@@ -440,24 +271,23 @@ krb4_rd_priv(s_in,schedule,key,sender,receiver)
 
 	PPCODE:
 	in_length=SvCUR(s_in);
-	if (in_length == 0)
-	{	seterror(-1);
+	if (in_length == 0) {
+		seterror(-1);
 		return;
 	}
-	in=(u_char *)safemalloc(in_length);
-	if (!in)
-	{	seterror(-1);
+	if (!New(0,in,in_length,u_char)) {
+		seterror(-1);
 		return;
 	}
-	memset(in,0,in_length);
-	memset(&msg_data,0,sizeof(msg_data));
-	memcpy(in,SvPV(s_in,na),in_length);
-	memcpy(&k,SvPV(key,na),SvCUR(key));
+	Zero(in,in_length,u_char);
+	Zero(&msg_data,1,MSG_DAT);
+	Copy(SvPV(s_in,na),in,in_length,u_char);
+	Copy(SvPV(key,na),&k,SvCUR(key),u_char);
 	error=krb_rd_priv(in,in_length,schedule,k,sender,receiver,&msg_data);
 	seterror(error);
-	safefree(in);
-	if (error == 0)
-	{	XPUSHs(sv_2mortal(newSVpv(msg_data.app_data,msg_data.app_length)));
+	Safefree(in);
+	if (error == 0) {
+		XPUSHs(sv_2mortal(newSVpv(msg_data.app_data,msg_data.app_length)));
 	}
 
 void
@@ -480,24 +310,15 @@ krb4_sendauth(options,fh,service,inst,realm,checksum,laddr,faddr,version)
 	int error,fd;
 
 	PPCODE:
-	ktext=(KTEXT)safemalloc(sizeof(KTEXT_ST));
-	if (!ktext)
-	{	XSRETURN_UNDEF;
-	}
-	cred=(CREDENTIALS *)safemalloc(sizeof(CREDENTIALS));
-	if (!cred)
-	{	XSRETURN_UNDEF;
-	}
-	schedule=(des_key_schedule *)safemalloc(sizeof(des_key_schedule));
-	if (!schedule)
-	{	XSRETURN_UNDEF;
-	}
+	if (!New(0,ktext,1,KTEXT_ST)) XSRETURN_UNDEF;
+	if (!New(0,cred,1,CREDENTIALS)) XSRETURN_UNDEF;
+	if (!New(0,schedule,1,des_key_schedule)) XSRETURN_UNDEF;
 	fd=fileno(fh);
 	error=krb_sendauth(options,fd,ktext,service,inst,realm,checksum,
 		&msg_data,cred,schedule,laddr,faddr,version);
 	seterror(error);
-	if (error == KSUCCESS)
-	{	ST(0) = sv_newmortal();
+	if (error == KSUCCESS) {
+		ST(0) = sv_newmortal();
 		ST(1) = sv_newmortal();
 		ST(2) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
@@ -505,10 +326,10 @@ krb4_sendauth(options,fh,service,inst,realm,checksum,laddr,faddr,version)
 		sv_setref_pv(ST(2), "Krb4::KeySchedule", (void*)schedule);
 		XSRETURN(3);
 	}
-	else
-	{	safefree(ktext);
-		safefree(cred);
-		safefree(schedule);
+	else {
+		Safefree(ktext);
+		Safefree(cred);
+		Safefree(schedule);
 	}
 
 void
@@ -530,23 +351,17 @@ krb4_recvauth(options,fh,service,inst,faddr,laddr,fn)
 
 	PPCODE:
 	ktext=(KTEXT)safemalloc(sizeof(KTEXT_ST));
-	if (!ktext)
-	{	XSRETURN_UNDEF;
-	}
+	if (!ktext) XSRETURN_UNDEF;
 	ad=(AUTH_DAT *)safemalloc(sizeof(AUTH_DAT));
-	if (!ad)
-	{	XSRETURN_UNDEF;
-	}
+	if (!ad) XSRETURN_UNDEF;
 	schedule=(des_key_schedule *)safemalloc(sizeof(des_key_schedule));
-	if (!schedule)
-	{	XSRETURN_UNDEF;
-	}
+	if (!schedule) XSRETURN_UNDEF;
 	fd=fileno(fh);
 	error=krb_recvauth(options,fd,ktext,service,inst,faddr,laddr,
 		ad,fn,schedule,version);
 	seterror(error);
-	if (error == KSUCCESS)
-	{	ST(0) = sv_newmortal();
+	if (error == KSUCCESS) {
+		ST(0) = sv_newmortal();
 		ST(1) = sv_newmortal();
 		ST(2) = sv_newmortal();
 		sv_setref_pv(ST(0), "Krb4::Ticket", (void*)ktext);
@@ -555,10 +370,10 @@ krb4_recvauth(options,fh,service,inst,faddr,laddr,fn)
 		ST(3) = sv_2mortal(newSVpv(version,strlen(version)));
 		XSRETURN(4);
 	}
-	else
-	{	safefree(ktext);
-		safefree(ad);
-		safefree(schedule);
+	else {
+		Safefree(ktext);
+		Safefree(ad);
+		Safefree(schedule);
 	}
 
 
@@ -574,15 +389,11 @@ new(class,dat)
 	int error;
 
 	PPCODE:
-	if (!SvOK(dat))
-	{	XSRETURN_UNDEF;
-	}
+	if (!SvOK(dat)) XSRETURN_UNDEF;
 	authent=(KTEXT)safemalloc(sizeof(KTEXT_ST));
-	if (!authent)
-	{	XSRETURN_UNDEF;
-	}
+	if (!authent) XSRETURN_UNDEF;
 	authent->length=SvCUR(dat);
-	memcpy(&authent->dat,SvPV(dat,na),authent->length);
+	Copy(SvPV(dat,na),&authent->dat,authent->length,u_char);
 	ST(0) = sv_newmortal();
 	sv_setref_pv(ST(0), "Krb4::Ticket", (void*)authent);
 	XSRETURN(1);

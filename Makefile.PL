@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'	=> 'Krb4',
     'VERSION_FROM' => 'Krb4.pm',
-    'LIBS'	=> ['-L/usr/itd/packages/k/kerberos-4/sun4x_55/lib -lkrb -ldes'],
+    'LIBS'	=> ['-L/usr/local/lib -lkrb -ldes'],
     'DEFINE'	=> '',
-    'INC'	=> '-I/usr/itd/packages/k/kerberos-4/sun4x_55/include'
+    'INC'	=> '-I/usr/local/include'
 );
